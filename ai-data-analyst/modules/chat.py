@@ -8,7 +8,6 @@ client = OpenAI(
 )
 
 
-# 🔹 AI reasoning (WHY explanations)
 def generate_reasoning(insights):
     prompt = f"""
 You are a data analyst.
@@ -32,7 +31,6 @@ Insights:
     return response.choices[0].message.content
 
 
-# 🔹 Smart Chat with Data (dynamic + accurate)
 def chat_with_data(df, question):
     question_lower = question.lower().strip()
 
@@ -47,37 +45,60 @@ def chat_with_data(df, question):
     stop_words = {
         "what", "is", "the", "of", "a", "an", "in", "on", "for", "to",
         "movie", "show", "series", "film", "release", "date", "year",
-        "details", "about", "give", "find", "tell", "me"
+        "details", "about", "give", "find", "tell", "me", "which", "who"
     }
 
-    words = [
-        clean_text(w)
-        for w in question.split()
-        if clean_text(w) and clean_text(w) not in stop_words
-    ]
+    # Detect requested column like duration, release_year, country, director
+    requested_col = None
+    for col in all_cols:
+        readable_col = col.lower().replace("_", " ")
+        if readable_col in question_lower:
+            requested_col = col
+            break
 
-    entity_query = " ".join(words)
+    # Build entity query by removing stop words and requested column words
+    words = []
+    requested_col_words = set(clean_text(requested_col).split()) if requested_col else set()
 
-    # -------- FULL ROW SEARCH --------
+    for w in question.split():
+        w_clean = clean_text(w)
+
+        if (
+            w_clean
+            and w_clean not in stop_words
+            and w_clean not in requested_col_words
+        ):
+            words.append(w_clean)
+
+    entity_query = " ".join(words).strip()
+
+    # -------- FULL DATASET ENTITY SEARCH --------
     if entity_query:
         row_text = df.fillna("").astype(str).agg(" ".join, axis=1).apply(clean_text)
 
-        mask = row_text.str.contains(entity_query, case=False, na=False, regex=False)
+        # Search all entity words anywhere in the row
+        mask = pd.Series(True, index=df.index)
+
+        for word in entity_query.split():
+            mask = mask & row_text.str.contains(word, case=False, na=False, regex=False)
+
         matched_rows = df[mask]
 
         if not matched_rows.empty:
             row = matched_rows.iloc[0]
 
+            title_value = row["title"] if "title" in df.columns else entity_query
+
+            # If specific column is requested
+            if requested_col:
+                return f"The {requested_col} of {title_value} is {row[requested_col]}."
+
+            # Release handling
             if "release" in question_lower:
                 if "release_date" in df.columns:
-                    return f"The release date of {row.get('title', entity_query)} is {row['release_date']}."
+                    return f"The release date of {title_value} is {row['release_date']}."
                 if "release_year" in df.columns:
-                    return f"The release year of {row.get('title', entity_query)} is {row['release_year']}."
-
-            for col in all_cols:
-                readable_col = col.lower().replace("_", " ")
-                if readable_col in question_lower:
-                    return f"The {readable_col} of {row.get('title', entity_query)} is {row[col]}."
+                    return f"The release year of {title_value} is {row['release_year']}."
 
             details = [f"{col}: {row[col]}" for col in all_cols]
             return "Match found:\n" + "\n".join(details)
@@ -86,6 +107,7 @@ def chat_with_data(df, question):
 
     # -------- NUMERIC ANALYSIS --------
     target_col = None
+
     for col in numeric_cols:
         if col.lower() in question_lower:
             target_col = col
@@ -110,8 +132,6 @@ def chat_with_data(df, question):
 
         if "average" in question_lower or "mean" in question_lower:
             return f"The average {target_col} is {round(df[target_col].mean(), 2)}."
-
-    return "I could not find a matching answer in the dataset."
 
     # -------- LLM FALLBACK --------
     prompt = f"""
