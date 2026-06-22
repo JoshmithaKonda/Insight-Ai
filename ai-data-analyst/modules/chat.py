@@ -1,5 +1,6 @@
 from openai import OpenAI
 import streamlit as st
+import pandas as pd
 
 client = OpenAI(
     api_key=st.secrets["MY_OPENAI_KEY"].strip()
@@ -37,57 +38,49 @@ def chat_with_data(df, question):
     numeric_cols = df.select_dtypes(include='number').columns
     all_cols = list(df.columns)
 
-    # -------- FULL DATASET SEARCH --------
-    cleaned_query = (
-        question_lower
-        .replace("what is", "")
-        .replace("what are", "")
-        .replace("show me", "")
-        .replace("find", "")
-        .replace("give", "")
-        .replace("details of", "")
-        .replace("details about", "")
-        .replace("movie", "")
-        .replace("?", "")
-        .strip()
-    )
+    # -------- SMART ENTITY SEARCH --------
+    stop_words = {
+        "what", "is", "the", "of", "a", "an", "in", "on", "for", "to",
+        "movie", "show", "series", "film", "release", "date", "year",
+        "details", "about", "give", "find", "tell", "me"
+    }
 
-    search_words = [w for w in cleaned_query.split() if len(w) > 2]
+    words = [
+        w.strip(" ?.,!").lower()
+        for w in question.split()
+        if w.strip(" ?.,!").lower() not in stop_words
+    ]
 
-    import pandas as pd
+    entity_query = " ".join(words).strip()
 
-    if search_words:
-      mask = pd.Series(False, index=df.index)
+    if entity_query:
+        mask = pd.Series(False, index=df.index)
 
-    for col in all_cols:
-        col_values = df[col].fillna("").astype(str).str.lower()
-
-        col_mask = col_values.str.contains(
-            search_words[0],
-            case=False,
-            na=False
-        )
-
-        for word in search_words[1:]:
-            col_mask = col_mask & col_values.str.contains(
-                word,
+        for col in all_cols:
+            col_values = df[col].fillna("").astype(str).str.lower()
+            mask = mask | col_values.str.contains(
+                entity_query,
                 case=False,
-                na=False
+                na=False,
+                regex=False
             )
-
-        mask = mask | col_mask
 
         matched_rows = df[mask]
 
         if not matched_rows.empty:
             row = matched_rows.iloc[0]
 
-            # If user asks for a specific column, return that column
-            for col in all_cols:
-                if col.lower().replace("_", " ") in question_lower:
-                    return f"The {col} is {row[col]}."
+            if "release" in question_lower:
+                if "release_date" in df.columns:
+                    return f"The release date of {row.get('title', entity_query)} is {row['release_date']}."
+                if "release_year" in df.columns:
+                    return f"The release year of {row.get('title', entity_query)} is {row['release_year']}."
 
-            # Otherwise return full matching row details
+            for col in all_cols:
+                readable_col = col.lower().replace("_", " ")
+                if readable_col in question_lower:
+                    return f"The {readable_col} of {row.get('title', entity_query)} is {row[col]}."
+
             details = []
             for col in all_cols:
                 details.append(f"{col}: {row[col]}")
@@ -136,27 +129,6 @@ Question:
 {question}
 
 Answer clearly. If the answer is not visible in the sample, say that more data search is needed.
-"""
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    return response.choices[0].message.content
-    # =========================
-    # 🤖 LLM fallback
-    # =========================
-
-    prompt = f"""
-You are a data analyst.
-
-Dataset:
-{df.head(20).to_string()}
-
-Answer clearly and correctly.
-
-Question: {question}
 """
 
     response = client.chat.completions.create(
