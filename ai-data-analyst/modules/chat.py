@@ -54,17 +54,28 @@ def chat_with_data(df, question):
 
     search_words = [w for w in cleaned_query.split() if len(w) > 2]
 
+    import pandas as pd
+
     if search_words:
-        mask = False
+      mask = pd.Series(False, index=df.index)
 
-        for col in all_cols:
-            col_values = df[col].astype(str).str.lower()
+    for col in all_cols:
+        col_values = df[col].fillna("").astype(str).str.lower()
 
-            col_mask = col_values.apply(
-                lambda value: all(word in value for word in search_words)
+        col_mask = col_values.str.contains(
+            search_words[0],
+            case=False,
+            na=False
+        )
+
+        for word in search_words[1:]:
+            col_mask = col_mask & col_values.str.contains(
+                word,
+                case=False,
+                na=False
             )
 
-            mask = mask | col_mask
+        mask = mask | col_mask
 
         matched_rows = df[mask]
 
