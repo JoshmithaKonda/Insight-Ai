@@ -3,6 +3,8 @@ from modules.data_loader import load_data, analyze_data
 from modules.visualizer import generate_charts
 from modules.insights import generate_insights
 from modules.chat import generate_reasoning, chat_with_data
+from pathlib import Path
+LOGO_PATH = Path(__file__).parent / "logo.png"
 
 
 st.set_page_config(
@@ -11,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.sidebar.image("logo.png", width=150)
+st.sidebar.image(str(LOGO_PATH), width=150)
 
 #  Custom UI
 st.markdown("""
@@ -49,7 +51,7 @@ h1 {
 header_col1, header_col2 = st.columns([1, 5])
 
 with header_col1:
-    st.image("logo.png", width=90)
+    st.image(str(LOGO_PATH), width=90)
 
 with header_col2:
     st.markdown("<h1>Insight-AI</h1>", unsafe_allow_html=True)
@@ -60,7 +62,7 @@ with header_col2:
 header_col1, header_col2 = st.columns([1, 5])
 
 with header_col1:
-    st.image("logo.png", width=90)
+    st.image("./logo.png", width=90)
 
 with header_col2:
     st.markdown("<h1>Insight-AI</h1>", unsafe_allow_html=True)
