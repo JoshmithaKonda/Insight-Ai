@@ -4,18 +4,20 @@ from modules.visualizer import generate_charts
 from modules.insights import generate_insights
 from modules.chat import generate_reasoning, chat_with_data
 from pathlib import Path
-LOGO_PATH = Path(__file__).parent / "logo.png"
 
+# Logo Path
+LOGO_PATH = Path(__file__).parent / "logo.png"
 
 st.set_page_config(
     page_title="InsightAI",
-    page_icon="logo.png",
+    page_icon=str(LOGO_PATH),
     layout="wide"
 )
 
+# Sidebar Logo
 st.sidebar.image(str(LOGO_PATH), width=150)
 
-#  Custom UI
+# Custom UI
 st.markdown("""
 <style>
 body {
@@ -46,23 +48,11 @@ h1 {
 </style>
 """, unsafe_allow_html=True)
 
-#  Header
-# Header with logo
+# Header with Logo
 header_col1, header_col2 = st.columns([1, 5])
 
 with header_col1:
     st.image(str(LOGO_PATH), width=90)
-
-with header_col2:
-    st.markdown("<h1>Insight-AI</h1>", unsafe_allow_html=True)
-    st.markdown(
-        '<p class="subtitle">AI-powered data analysis & insights platform</p>',
-        unsafe_allow_html=True
-    )#  Header with logo
-header_col1, header_col2 = st.columns([1, 5])
-
-with header_col1:
-    st.image("./logo.png", width=90)
 
 with header_col2:
     st.markdown("<h1>Insight-AI</h1>", unsafe_allow_html=True)
