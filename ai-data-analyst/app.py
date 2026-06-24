@@ -5,9 +5,15 @@ from modules.insights import generate_insights
 from modules.chat import generate_reasoning, chat_with_data
 
 
-st.set_page_config(page_title="InsightAI", layout="wide")
+st.set_page_config(
+    page_title="InsightAI",
+    page_icon="logo.png",
+    layout="wide"
+)
 
-# 🔥 Custom UI
+st.sidebar.image("logo.png", width=150)
+
+#  Custom UI
 st.markdown("""
 <style>
 body {
@@ -38,11 +44,31 @@ h1 {
 </style>
 """, unsafe_allow_html=True)
 
-# 🔥 Header
-st.markdown("<h1>Insight-AI</h1>", unsafe_allow_html=True)
-st.markdown('<p class="subtitle">AI-powered data analysis & insights platform</p>', unsafe_allow_html=True)
+#  Header
+# Header with logo
+header_col1, header_col2 = st.columns([1, 5])
 
-# 🔥 Upload
+with header_col1:
+    st.image("logo.png", width=90)
+
+with header_col2:
+    st.markdown("<h1>Insight-AI</h1>", unsafe_allow_html=True)
+    st.markdown(
+        '<p class="subtitle">AI-powered data analysis & insights platform</p>',
+        unsafe_allow_html=True
+    )#  Header with logo
+header_col1, header_col2 = st.columns([1, 5])
+
+with header_col1:
+    st.image("logo.png", width=90)
+
+with header_col2:
+    st.markdown("<h1>Insight-AI</h1>", unsafe_allow_html=True)
+    st.markdown(
+        '<p class="subtitle">AI-powered data analysis & insights platform</p>',
+        unsafe_allow_html=True
+    )
+#  Upload
 st.markdown('<div class="upload-box">', unsafe_allow_html=True)
 uploaded_files = st.file_uploader(
     "Upload one or more datasets",
@@ -51,7 +77,7 @@ uploaded_files = st.file_uploader(
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# 🔥 Main App
+#  Main App
 if uploaded_files:
     dataframes = {}
 
@@ -60,24 +86,24 @@ if uploaded_files:
         dataframes[file.name] = df
     st.write(f"📂 {len(dataframes)} dataset(s) uploaded")
 
-    # 🔥 Dataset selector
+    # Dataset selector
     selected_file = st.selectbox("Select Dataset", list(dataframes.keys()))
     df = dataframes[selected_file]
 
-    # 📊 Preview
+    #  Preview
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.subheader("📊 Data Preview")
     st.dataframe(df.head())
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 🧠 Summary
+    #  Summary
     summary = analyze_data(df)
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.subheader("Data Summary")
     st.json(summary)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 🔥 KPI Cards
+    #  KPI Cards
     col1, col2, col3 = st.columns(3)
     if "sales" in df.columns:
         col1.metric("Total Sales", int(df["sales"].sum()))
@@ -85,7 +111,7 @@ if uploaded_files:
         col2.metric("Average Profit", int(df["profit"].mean()))
     col3.metric("Total Records", len(df))
 
-    # 🔥 Tabs
+    #  Tabs
     tab1, tab2, tab3, tab4 = st.tabs([
         "📊 Dashboard",
         "🧠 Insights",
@@ -93,28 +119,28 @@ if uploaded_files:
         "💬 Chat"
     ])
 
-    # 📊 Dashboard Tab
+    #  Dashboard Tab
     with tab1:
         st.subheader("Interactive Dashboard")
         charts = generate_charts(df)
         for chart in charts:
             st.plotly_chart(chart, use_container_width=True)
 
-    # 🧠 Insights Tab
+    #  Insights Tab
     with tab2:
         st.subheader("Key Insights")
         insights = generate_insights(df)
         for ins in insights:
             st.write(f"• {ins}")
 
-    # 🤖 Explanation Tab
+    #  Explanation Tab
     with tab3:
         st.subheader("AI Explanation")
         insights = generate_insights(df)
         reasoning = generate_reasoning(insights)
         st.write(reasoning)
 
-    # 💬 Chat Tab
+    #  Chat Tab
     with tab4:
         st.subheader("💬 Chat with Data")
         user_question = st.text_input("Ask something about your data:")
